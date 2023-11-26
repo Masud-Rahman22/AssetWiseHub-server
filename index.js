@@ -2,6 +2,7 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 require('dotenv').config()
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY)
 const port = process.env.PORT || 5000;
 
 // middleware
@@ -29,6 +30,7 @@ async function run() {
         const EmployeesCollection = client.db('AssetWise').collection('employeeInfo')
         const adminCollection = client.db('AssetWise').collection('adminInfo')
         const allUsersCollection = client.db('AssetWise').collection('allUsers')
+        const packagesCollection = client.db('AssetWise').collection('packages')
         // const adminCollection = client.db('admin').collection('adminData')
 
         // employees info
@@ -42,6 +44,25 @@ async function run() {
 
         app.post('/adminInfo',async(req,res)=>{
             const result = await adminCollection.insertOne(req.body)
+            res.send(result)
+        })
+
+        app.get('/adminInfo', async(req,res)=>{
+            const result = await adminCollection.find().toArray()
+            res.send(result)
+        })
+
+        // packages
+
+        app.get('/packages', async(req,res)=>{
+            const result = await packagesCollection.find().toArray()
+            res.send(result)
+        })
+
+        app.get('/packages/:package',async(req,res)=>{
+            const package = req.params.package
+            const query = {name:package}
+            const result = await packagesCollection.findOne(query)
             res.send(result)
         })
 
@@ -61,6 +82,20 @@ async function run() {
             console.log(query);
             const result = await allUsersCollection.findOne(query)
             res.send(result)
+        })
+        // payment
+        app.post('/create-payment-intent', async (req, res) => {
+            const { price } = req.body;
+            const amount = parseInt(price * 100);
+            console.log('amount in the payment', amount);
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: "usd",
+                payment_method_types: ['card']
+            });
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            });
         })
 
         // Send a ping to confirm a successful connection
