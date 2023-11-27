@@ -33,12 +33,54 @@ async function run() {
         const packagesCollection = client.db('AssetWise').collection('packages')
         const paymentsCollection = client.db('AssetWise').collection('payments')
         const assetsInfoCollection = client.db('AssetWise').collection('assetsInfo')
+        const requestForAssetCollection = client.db('AssetWise').collection('requestForAsset')
+        const customRequestCollection = client.db('AssetWise').collection('customRequest')
         // const adminCollection = client.db('admin').collection('adminData')
 
         // employees info
 
         app.post('/employeesInfo',async(req,res)=>{
             const result = await EmployeesCollection.insertOne(req.body)
+            res.send(result)
+        })
+
+        app.post('/requestForAsset',async(req,res)=>{
+            const result = await requestForAssetCollection.insertOne(req.body)
+            res.send(result)
+        })
+
+        app.get('/requestForAsset',async(req,res)=>{
+            const result = await requestForAssetCollection.find().toArray()
+            res.send(result)
+        })
+
+        app.post('/customRequest', async(req,res)=>{
+            const result = await customRequestCollection.insertOne(req.body)
+            res.send(result)
+        })
+
+        app.get('/customRequest', async(req,res)=>{
+            const result = await customRequestCollection.find().toArray()
+            res.send(result)
+        })
+
+        app.patch('/customRequest/:id', async(req,res)=>{
+            const id = req.params.id
+            const filter = {_id : new ObjectId(id)}
+            const updatedDoc = {
+                $set: {
+                    requestStatus: 'approved',
+                    approvedDate: new Date().toLocaleDateString()
+                }
+            }
+            const result = await customRequestCollection.updateOne(filter,updatedDoc)
+            res.send(result)
+        })
+
+        app.delete('/customRequest/:id',async(req,res)=>{
+            const id = req.params.id
+            const query = {_id : new ObjectId(id)}
+            const result = await customRequestCollection.deleteOne(query)
             res.send(result)
         })
 
@@ -146,6 +188,7 @@ async function run() {
                     assetName: updatedInfo.assetName,
                     assetType: updatedInfo.assetType,
                     assetQuantity: updatedInfo.assetQuantity,
+                    assetStatus: updatedInfo.assetStatus,
                     date: updatedInfo.date
                 }
             }
