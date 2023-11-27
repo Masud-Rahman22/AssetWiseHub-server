@@ -10,7 +10,7 @@ app.use(cors())
 app.use(express.json())
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.aw2xu1p.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -31,6 +31,8 @@ async function run() {
         const adminCollection = client.db('AssetWise').collection('adminInfo')
         const allUsersCollection = client.db('AssetWise').collection('allUsers')
         const packagesCollection = client.db('AssetWise').collection('packages')
+        const paymentsCollection = client.db('AssetWise').collection('payments')
+        const assetsInfoCollection = client.db('AssetWise').collection('assetsInfo')
         // const adminCollection = client.db('admin').collection('adminData')
 
         // employees info
@@ -49,6 +51,19 @@ async function run() {
 
         app.get('/adminInfo', async(req,res)=>{
             const result = await adminCollection.find().toArray()
+            res.send(result)
+        })
+
+        app.put('/adminInfo', async (req, res) => {
+            const info = req.body;
+            console.log(info);
+            const filter = {adminEmail: info?.email}
+            const updatedDoc = {
+                $set: {
+                    limit: info?.member
+                }
+            }
+            const result = await adminCollection.updateOne(filter, updatedDoc)
             res.send(result)
         })
 
@@ -79,7 +94,6 @@ async function run() {
         app.get('/allUsers/:email',async(req,res)=>{
             const email = req.params.email
             const query = {email:email}
-            console.log(query);
             const result = await allUsersCollection.findOne(query)
             res.send(result)
         })
@@ -96,6 +110,59 @@ async function run() {
             res.send({
                 clientSecret: paymentIntent.client_secret,
             });
+        })
+        
+        app.post('/payments',async (req,res)=>{
+            const result = await paymentsCollection.insertOne(req.body)
+            res.send(result)
+        })
+
+        // assets made by admin
+
+        app.post('/assetsInfo', async(req,res)=>{
+            const result = await assetsInfoCollection.insertOne(req.body)
+            res.send(result)
+        })
+
+        app.get('/assetsInfo',async(req,res)=>{
+            const result = await assetsInfoCollection.find().toArray()
+            res.send(result)
+        })
+
+        app.delete('/assetsInfo/:id',async(req,res)=>{
+            const id = req.params.id
+            const query = {_id : new ObjectId(id)}
+            const result = await assetsInfoCollection.deleteOne(query)
+            res.send(result)
+        })
+
+        app.put('/assetUpdate/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) }
+            const options = { upsert: true };
+            const updatedInfo = req.body;
+            const info = {
+                $set: {
+                    assetName: updatedInfo.assetName,
+                    assetType: updatedInfo.assetType,
+                    assetQuantity: updatedInfo.assetQuantity,
+                    date: updatedInfo.date
+                }
+            }
+            const result = await assetsInfoCollection.updateOne(filter, info, options);
+            res.send(result);
+        })
+
+        app.get('/assetUpdate/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await assetsInfoCollection.findOne(query);
+            res.send(result);
+        })
+
+        app.get('/assetUpdate',async(req, res)=>{
+            const result = await assetsInfoCollection.find().toArray()
+            res.send(result)
         })
 
         // Send a ping to confirm a successful connection
