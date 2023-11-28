@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 require('dotenv').config()
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY)
 const port = process.env.PORT || 5000;
@@ -35,12 +36,42 @@ async function run() {
         const assetsInfoCollection = client.db('AssetWise').collection('assetsInfo')
         const requestForAssetCollection = client.db('AssetWise').collection('requestForAsset')
         const customRequestCollection = client.db('AssetWise').collection('customRequest')
+        const teamCollection = client.db('AssetWise').collection('team')
+        const userCollection = client.db('AssetWise').collection('user')
         // const adminCollection = client.db('admin').collection('adminData')
+
+        app.post('/jwt', async (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+                expiresIn: '1h'
+            })
+            res.send({ token });
+        })
 
         // employees info
 
         app.post('/employeesInfo',async(req,res)=>{
             const result = await EmployeesCollection.insertOne(req.body)
+            res.send(result)
+        })
+
+        app.get('/employeesInfo/:email',async(req,res)=>{
+            const email = req.params.email
+            const query = {EmployeeEmail: email}
+            const result = await EmployeesCollection.findOne(query)
+            res.send(result)
+        })
+
+        app.put('/employeesInfo', async(req, res) => {
+            const info = req.body;
+            console.log(info);
+            const filter = {EmployeeEmail: info?.userName.email}
+            const updatedDoc = {
+                $set: {
+                    EmployeeName: info?.userName.name
+                }
+            }
+            const result = await EmployeesCollection.updateOne(filter,updatedDoc)
             res.send(result)
         })
 
@@ -91,8 +122,28 @@ async function run() {
             res.send(result)
         })
 
+        app.get('/adminInfo/:email',async(req,res)=>{
+            const email = req.params.email
+            const query = {adminEmail: email}
+            const result = await adminCollection.findOne(query)
+            res.send(result)
+        })
+
         app.get('/adminInfo', async(req,res)=>{
             const result = await adminCollection.find().toArray()
+            res.send(result)
+        })
+
+        app.put('/adminInfo', async(req, res) => {
+            const info = req.body;
+            console.log(info);
+            const filter = {adminEmail: info?.userName?.email}
+            const updatedDoc = {
+                $set: {
+                    adminName: info?.userName?.name
+                }
+            }
+            const result = await adminCollection.updateOne(filter,updatedDoc)
             res.send(result)
         })
 
@@ -115,10 +166,25 @@ async function run() {
             const result = await packagesCollection.find().toArray()
             res.send(result)
         })
+        
 
         app.get('/packages/:package',async(req,res)=>{
             const package = req.params.package
             const query = {name:package}
+            const result = await packagesCollection.findOne(query)
+            res.send(result)
+        })
+
+        app.get('/packages/:id',async(req,res)=>{
+            const id = req.params.id
+            const query = {_id:new ObjectId(id)}
+            const result = await packagesCollection.findOne(query)
+            res.send(result)
+        })
+
+        app.get('/packages/:name',async(req,res)=>{
+            const name = req.params.name
+            const query = {name: name}
             const result = await packagesCollection.findOne(query)
             res.send(result)
         })
@@ -205,6 +271,34 @@ async function run() {
 
         app.get('/assetUpdate',async(req, res)=>{
             const result = await assetsInfoCollection.find().toArray()
+            res.send(result)
+        })
+
+        app.post('/team',async(req,res)=>{
+            const result = await teamCollection.insertOne(req.body)
+            res.send(result)
+        })
+
+        app.post('/user',async(req,res)=>{
+            const result = await userCollection.insertOne(req.body)
+            res.send(result)
+        })
+
+        app.get('/user',async(req,res)=>{
+            const result = await userCollection.find().toArray()
+            res.send(result)
+        })
+
+
+        app.get('/team',async(req,res)=>{
+            const result = await teamCollection.find().toArray()
+            res.send(result)
+        })
+
+        app.delete('/user/:id',async(req,res)=>{
+            const id = req.params.id
+            const query = {_id : new ObjectId(id)}
+            const result = await userCollection.deleteOne(query)
             res.send(result)
         })
 
