@@ -6,7 +6,7 @@ require('dotenv').config()
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY)
 const port = process.env.PORT || 5000;
 
-// middleware
+// middleware Here
 app.use(cors())
 app.use(express.json())
 
@@ -26,7 +26,7 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+        // await client.connect();
         
         const EmployeesCollection = client.db('AssetWise').collection('employeeInfo')
         const adminCollection = client.db('AssetWise').collection('adminInfo')
@@ -102,6 +102,18 @@ async function run() {
                 $set: {
                     requestStatus: 'approved',
                     approvedDate: new Date().toLocaleDateString()
+                }
+            }
+            const result = await customRequestCollection.updateOne(filter,updatedDoc)
+            res.send(result)
+        })
+        app.patch('/customRequest', async(req,res)=>{
+            const name = req.body
+            console.log(name.name);
+            const filter = {assetName : name.name}
+            const updatedDoc = {
+                $set: {
+                    requestStatus: "returned"
                 }
             }
             const result = await customRequestCollection.updateOne(filter,updatedDoc)
@@ -303,8 +315,8 @@ async function run() {
         })
 
         // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+        // await client.db("admin").command({ ping: 1 });
+        // console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
         // await client.close();
